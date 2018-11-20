@@ -16,7 +16,14 @@
 
 var truncate = function (str, width) {
     if (str && str.length > width) {
-        return str.slice(0, 4) + "..." + str.slice(str.length-15, str.length-1);
+        return str.slice(0, 4) + "..." + str.slice(str.length-15, str.length);
+    }
+    return str;
+};
+
+var truncatePodName = function (str, width) {
+    if (str && str.length > width) {
+        return str.slice(0, 20) + "..." + str.slice(str.length-5, str.length);
     }
     return str;
 };
@@ -28,6 +35,8 @@ var controllers = [];
 var uses = {};
 
 var groups = {};
+
+var nodeLabels = ["beta.kubernetes.io/instance-type", "cloud.google.com/gke-nodepool", "failure-domain.beta.kubernetes.io/zone"]
 
 var insertByName = function (index, value) {
     if (!value || !value.metadata.labels || value.metadata.name == 'kubernetes') {
@@ -81,10 +90,10 @@ var renderPods = function () {
                 podsPerNode[node.metadata.name] = podsPerNode[node.metadata.name] + 1
               }
               var eltDiv = $('<div class="window pod" id="' + pod.metadata.uid +
-                      '" style="left: ' + (margin) + '; top: ' + (10 + (podsPerNode[node.metadata.name] * 120)) + '"/>');
+                      '" style="left: ' + (margin) + '; top: ' + (80 + (podsPerNode[node.metadata.name] * 120)) + '"/>');
 
               span = $('<span />');
-              span.text(truncate(pod.metadata.name, 25));
+              span.text(truncatePodName(pod.metadata.name, 25));
 
               eltDiv.append(span)
               div.append(eltDiv);
@@ -154,7 +163,7 @@ var renderNodes = function () {
             return;
         }
         var div = $('<div/>');
-        var x = 100;
+        var x = 60;
         var podCount = 0;
         $.each(list, function (index, value) {
             var eltDiv = null;
@@ -164,11 +173,23 @@ var renderNodes = function () {
                 nodeMargins[value.metadata.name] = (x+75)
             }
             span = $('<span />');
-
             span.text(truncate(value.metadata.name, 25));
             eltDiv.append(span)
+            eltDiv.append($('<br />'))
+            eltDiv.append($('<br />'))
+            labelSpan = $('<span />');
+            labelSpan.text("Labels:");
+            eltDiv.append(labelSpan)
+            $.each(value.metadata.labels, function(key, val) {
+              if (nodeLabels.includes(key)){
+                eltDiv.append($('<br />'))
+                span2 = $('<span style="font-size: 14px; color: black" />');
+                span2.text(truncate(key, 20) + " = " + val);
+                eltDiv.append(span2)
+              }
+            });
             div.append(eltDiv);
-            x += 320;
+            x += 360;
         });
         // y += 400;
         nodeLeft += 200;
@@ -263,5 +284,5 @@ var reload = function () {
     })
     jsPlumb.fire("jsPlumbDemoLoaded", instance);
 
-    setTimeout(reload, 6000);
+    // setTimeout(reload, 6000);
 };
