@@ -31,12 +31,13 @@ var truncatePodName = function (str, width) {
 var pods = [];
 var nodes = [];
 var nodeMargins = {};
-var controllers = [];
-var uses = {};
 
 var groups = {};
 
 var nodeLabels = ["beta.kubernetes.io/instance-type", "cloud.google.com/gke-nodepool", "failure-domain.beta.kubernetes.io/zone"]
+var podColors = [
+   "#7FDBFF","#0074D9", "#39CCCC","#85144b", "#FF4136", "#3D9970", "#2ECC40", "#01FF70", "#FFDC00", "#FF851B", "#F012BE", "#B10DC9", "#AAAAAA",
+]
 
 var insertByName = function (index, value) {
     if (!value || !value.metadata.labels || value.metadata.name == 'kubernetes') {
@@ -51,8 +52,8 @@ var insertByName = function (index, value) {
 };
 
 var groupByName = function () {
-    $.each(pods.items, insertByName);
-    $.each(nodes.items, insertByName);
+    $.each(pods, insertByName);
+    $.each(nodes, insertByName);
 };
 
 // var matchesLabelQuery = function (labels, selector) {
@@ -69,16 +70,15 @@ var groupByName = function () {
 // };
 
 var renderPods = function () {
-    // connectUses();
     var elt = $('#sheet');
 
     var podsPerNode = {}
 
-    for (var j = 0; j < pods.items.length; j++) {
-        var pod = pods.items[j];
+    for (var j = 0; j < pods.length; j++) {
+        var pod = pods[j];
 
-        for (var i = 0; i < nodes.items.length; i++) {
-          var node = nodes.items[i];
+        for (var i = 0; i < nodes.length; i++) {
+          var node = nodes[i];
             if (pod.spec.nodeName === node.metadata.name) {
 
               var div = $('<div/>');
@@ -90,7 +90,7 @@ var renderPods = function () {
                 podsPerNode[node.metadata.name] = podsPerNode[node.metadata.name] + 1
               }
               var eltDiv = $('<div class="window pod" id="' + pod.metadata.uid +
-                      '" style="left: ' + (margin) + '; top: ' + (80 + (podsPerNode[node.metadata.name] * 120)) + '"/>');
+                      '" style="left: ' + (margin) + '; top: ' + (80 + (podsPerNode[node.metadata.name] * 120)) + '; background-color:'+ podColors[pod.metadata.labels.name.hashCode() % podColors.length] +';"/>');
 
               span = $('<span />');
               span.text(truncatePodName(pod.metadata.name, 25));
@@ -100,9 +100,7 @@ var renderPods = function () {
 
               elt.append(div)
 
-            // if (pod.metadata && controller.spec &&
-            //     matchesLabelQuery(pod.metadata.labels, controller.spec.selector)) {
-                jsPlumb.connect({
+              jsPlumb.connect({
                     source: node.metadata.name,
                     target: pod.metadata.uid,
                     anchors: ["Left", "Left"],
@@ -120,35 +118,6 @@ var colors = [
     'rgb(213,15,37)',
     'rgba(238,178,17,1.0)'
 ];
-
-var makeGroupOrder = function () {
-    var groupScores = {};
-    $.each(uses, function (key, value) {
-        if (!groupScores[key]) {
-            groupScores[key] = 0;
-        }
-        $.each(value, function (ix, uses) {
-            if (!groupScores[uses]) {
-                groupScores[uses] = 1;
-            } else {
-                groupScores[uses]++;
-            }
-        });
-    });
-    $.each(groups, function(key, value) {
-      if (!groupScores[key]) {
-        groupScores[key] = 0;
-      }
-    });
-    var groupOrder = [];
-    $.each(groupScores, function (key, value) {
-        groupOrder.push(key);
-    });
-    groupOrder.sort(function (a, b) {
-        return groupScores[a] - groupScores[b];
-    });
-    return groupOrder;
-};
 
 var renderNodes = function () {
     var elt = $('#sheet');
@@ -197,51 +166,24 @@ var renderNodes = function () {
     });
 };
 
-var insertUse = function (name, use) {
-    for (var i = 0; i < uses[name].length; i++) {
-        if (uses[name][i] == use) {
-            return;
-        }
-    }
-    uses[name].push(use);
-};
-
 var loadData = function () {
     var deferred = new $.Deferred();
     var req1 = $.getJSON("/api/v1/namespaces/default/pods", function (data) {
-        pods = data;
+        pods = [];
         $.each(data.items, function (key, val) {
-            val.type = 'pod';
-
-            if (val.metadata.labels) {
-                if (val.metadata.labels.uses) {
-                    if (!uses[val.metadata.labels.run]) {
-                        uses[val.metadata.labels.run] = val.metadata.labels.uses.split(",");
-                    } else {
-                        $.each(val.metadata.labels.uses.split(","), function (ix, use) {
-                            insertUse(val.metadata.labels.run, use);
-                        });
-                    }
-                }
-            }
+          val.type = 'pod';
+          pods.push(val)
         });
     });
 
-    var req2 = $.getJSON("/apis/apps/v1/namespaces/default/deployments", function (data) {
-        controllers = data;
-        $.each(data.items, function (key, val) {
-            val.type = 'deployment';
-        });
-    });
-
-
-    var req3 = $.getJSON("/api/v1/nodes", function (data) {
-        nodes = data;
+    var req2 = $.getJSON("/api/v1/nodes", function (data) {
+        nodes = [];
         $.each(data.items, function (key, val) {
             val.type = 'node';
+            nodes.push(val)
         });
     });
-    $.when(req1, req2, req3).then(function () {
+    $.when(req1, req2).then(function () {
         deferred.resolve();
     });
     return deferred;
@@ -257,8 +199,6 @@ var reload = function () {
 
     pods = [];
     nodes = [];
-    controllers = [];
-    uses = {};
     groups = {};
 
     var instance = jsPlumb.getInstance({
@@ -284,5 +224,18 @@ var reload = function () {
     })
     jsPlumb.fire("jsPlumbDemoLoaded", instance);
 
-    // setTimeout(reload, 6000);
+    setTimeout(reload, 6000);
 };
+
+String.prototype.hashCode = function() {
+    var hash = 0;
+    if (this.length == 0) {
+        return hash;
+    }
+    var charNr = this.length > 6 ? 6 : this.length
+    for (var i = 0; i < charNr; i++) {
+        var char = this.charCodeAt(0);
+        hash = hash+char;
+    }
+    return hash;
+}
