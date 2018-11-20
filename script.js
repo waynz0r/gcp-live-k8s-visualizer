@@ -59,7 +59,7 @@ var groupByName = function () {
 //     return match;
 // };
 
-var connectNodes = function () {
+var renderPods = function () {
     // connectUses();
     var elt = $('#sheet');
 
@@ -96,38 +96,12 @@ var connectNodes = function () {
                 jsPlumb.connect({
                     source: node.metadata.name,
                     target: pod.metadata.uid,
-                    anchors: ["Bottom", "Bottom"],
+                    anchors: ["Left", "Left"],
                     paintStyle: {lineWidth: 5, strokeStyle: 'rgb(51,105,232)'},
                     joinStyle: "round",
-                    endpointStyle: {fillStyle: 'rgb(51,105,232)', radius: 7},
+                    endpointStyle: {fillStyle: 'rgb(51,105,232)', radius: 5},
                     connector: ["Flowchart", {cornerRadius: 5}]
                 });
-            }
-        }
-    }
-
-
-    for (var i = 0; i < nodes.items.length; i++) {
-        var node = nodes.items[i];
-        if (node.metadata.name == 'kubernetes') {
-            continue;
-        }
-
-        for (var j = 0; j < pods.items.length; j++) {
-
-            var pod = pods.items[j];
-
-            if (matchesLabelQuery(pod.metadata.labels, node.spec.selector)) {
-                jsPlumb.connect(
-                    {
-                        source: node.metadata.uid,
-                        target: pod.metadata.uid,
-                        anchors: ["Bottom", "Top"],
-                        paintStyle: {lineWidth: 5, strokeStyle: 'rgb(0,153,57)'},
-                        endpointStyle: {fillStyle: 'rgb(0,153,57)', radius: 7},
-                        joinStyle: "round",
-                        connector: ["Flowchart", {cornerRadius: 5}]
-                    });
             }
         }
     }
@@ -137,40 +111,6 @@ var colors = [
     'rgb(213,15,37)',
     'rgba(238,178,17,1.0)'
 ];
-
-// var connectUses = function () {
-//     var colorIx = 0;
-//
-//     $.each(uses, function (key, list) {
-//
-//         var color = colors[colorIx];
-//         colorIx++;
-//         $.each(pods.items, function (i, pod) {
-//             if (pod.metadata.labels && pod.metadata.labels.run == key) {
-//                 $.each(list, function (j, nodeKey) {
-//                   $.each(nodes.items, function (j, node) {
-//                     if (node.metadata.labels && node.metadata.labels.run == nodeKey) {
-//                         jsPlumb.connect(
-//                             {
-//                                 source: pod.metadata.uid,
-//                                 target: node.metadata.uid,
-//                                 endpoint: "Blank",
-//                                 anchors: ["Bottom", "Top"],
-//                                 connector: "Straight",
-//                                 paintStyle: {lineWidth: 5, strokeStyle: color},
-//                                 overlays: [
-//                                     ["Arrow", {width: 15, length: 30, location: 0.3}],
-//                                     ["Arrow", {width: 15, length: 30, location: 0.6}],
-//                                     ["Arrow", {width: 15, length: 30, location: 1}],
-//                                 ],
-//                             });
-//                     }
-//                   });
-//                 });
-//             }
-//         });
-//     });
-// };
 
 var makeGroupOrder = function () {
     var groupScores = {};
@@ -201,7 +141,7 @@ var makeGroupOrder = function () {
     return groupOrder;
 };
 
-var renderGroups = function () {
+var renderNodes = function () {
     var elt = $('#sheet');
     var y = 10;
     var nodeLeft = 0;
@@ -222,7 +162,6 @@ var renderGroups = function () {
                 eltDiv = $('<div class="window wide node" id="' + value.metadata.name +
                     '" style="left: ' + (x + 75) + '; top: ' + y + '"/>');
                 nodeMargins[value.metadata.name] = (x+75)
-                console.log(nodeMargins)
             }
             span = $('<span />');
 
@@ -319,10 +258,10 @@ var reload = function () {
     var promise = loadData();
     $.when(promise).then(function () {
         groupByName();
-        renderGroups();
-        connectNodes();
+        renderNodes();
+        renderPods();
     })
     jsPlumb.fire("jsPlumbDemoLoaded", instance);
 
-    //setTimeout(reload, 6000);
+    setTimeout(reload, 6000);
 };

@@ -1,5 +1,5 @@
 .wide {
-  width: 290px;
+  width: 250px;
 }
 
 .node {
@@ -39,9 +39,9 @@
   border-radius: 0;
 }
 
-/* .window span {
+.window span {
   vertical-align: middle;
-} */
+}
 
 #main {
   margin-top: 0;
