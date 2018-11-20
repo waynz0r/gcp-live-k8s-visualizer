@@ -16,60 +16,85 @@
 
 var truncate = function (str, width) {
     if (str && str.length > width) {
-        return str.slice(0, width) + "...";
+        return str.slice(0, 4) + "..." + str.slice(str.length-15, str.length-1);
     }
     return str;
 };
 
 var pods = [];
-var services = [];
+var nodes = [];
+var nodeMargins = {};
 var controllers = [];
 var uses = {};
 
 var groups = {};
 
 var insertByName = function (index, value) {
-
     if (!value || !value.metadata.labels || value.metadata.name == 'kubernetes') {
         return;
     }
-    var list = groups[value.metadata.labels.run];
+    var list = groups[value.type];
     if (!list) {
         list = [];
-        groups[value.metadata.labels.run] = list;
+        groups[value.type] = list;
     }
     list.push(value);
 };
 
 var groupByName = function () {
     $.each(pods.items, insertByName);
-    $.each(controllers.items, insertByName);
-    $.each(services.items, insertByName);
+    $.each(nodes.items, insertByName);
 };
 
-var matchesLabelQuery = function (labels, selector) {
-    var match = true;
+// var matchesLabelQuery = function (labels, selector) {
+//     var match = true;
+//
+//     if(!labels) { return false; }
+//
+//     $.each(selector, function (key, value) {
+//         if (labels[key] !== value) {
+//             match = false;
+//         }
+//     });
+//     return match;
+// };
 
-    if(!labels) { return false; }
+var connectNodes = function () {
+    // connectUses();
+    var elt = $('#sheet');
 
-    $.each(selector, function (key, value) {
-        if (labels[key] !== value) {
-            match = false;
-        }
-    });
-    return match;
-};
+    var podsPerNode = {}
 
-var connectControllers = function () {
-    connectUses();
-    for (var i = 0; i < controllers.items.length; i++) {
-        var controller = controllers.items[i];
-        for (var j = 0; j < pods.items.length; j++) {
-            var pod = pods.items[j];
-            if (pod.metadata && controller.spec &&
-                matchesLabelQuery(pod.metadata.labels, controller.spec.selector)) {
+    for (var j = 0; j < pods.items.length; j++) {
+        var pod = pods.items[j];
+
+        for (var i = 0; i < nodes.items.length; i++) {
+          var node = nodes.items[i];
+            if (pod.spec.nodeName === node.metadata.name) {
+
+              var div = $('<div/>');
+
+              margin = nodeMargins[node.metadata.name]
+              if (!podsPerNode[node.metadata.name]) {
+                podsPerNode[node.metadata.name] = 1
+              } else {
+                podsPerNode[node.metadata.name] = podsPerNode[node.metadata.name] + 1
+              }
+              var eltDiv = $('<div class="window pod" id="' + pod.metadata.uid +
+                      '" style="left: ' + (margin) + '; top: ' + (10 + (podsPerNode[node.metadata.name] * 120)) + '"/>');
+
+              span = $('<span />');
+              span.text(truncate(pod.metadata.name, 25));
+
+              eltDiv.append(span)
+              div.append(eltDiv);
+
+              elt.append(div)
+
+            // if (pod.metadata && controller.spec &&
+            //     matchesLabelQuery(pod.metadata.labels, controller.spec.selector)) {
                 jsPlumb.connect({
-                    source: controller.metadata.uid,
+                    source: node.metadata.name,
                     target: pod.metadata.uid,
                     anchors: ["Bottom", "Bottom"],
                     paintStyle: {lineWidth: 5, strokeStyle: 'rgb(51,105,232)'},
@@ -82,9 +107,9 @@ var connectControllers = function () {
     }
 
 
-    for (var i = 0; i < services.items.length; i++) {
-        var service = services.items[i];
-        if (service.metadata.name == 'kubernetes') {
+    for (var i = 0; i < nodes.items.length; i++) {
+        var node = nodes.items[i];
+        if (node.metadata.name == 'kubernetes') {
             continue;
         }
 
@@ -92,10 +117,10 @@ var connectControllers = function () {
 
             var pod = pods.items[j];
 
-            if (matchesLabelQuery(pod.metadata.labels, service.spec.selector)) {
+            if (matchesLabelQuery(pod.metadata.labels, node.spec.selector)) {
                 jsPlumb.connect(
                     {
-                        source: service.metadata.uid,
+                        source: node.metadata.uid,
                         target: pod.metadata.uid,
                         anchors: ["Bottom", "Top"],
                         paintStyle: {lineWidth: 5, strokeStyle: 'rgb(0,153,57)'},
@@ -113,39 +138,39 @@ var colors = [
     'rgba(238,178,17,1.0)'
 ];
 
-var connectUses = function () {
-    var colorIx = 0;
-
-    $.each(uses, function (key, list) {
-
-        var color = colors[colorIx];
-        colorIx++;
-        $.each(pods.items, function (i, pod) {
-            if (pod.metadata.labels && pod.metadata.labels.run == key) {
-                $.each(list, function (j, serviceKey) {
-                  $.each(services.items, function (j, service) {
-                    if (service.metadata.labels && service.metadata.labels.run == serviceKey) {
-                        jsPlumb.connect(
-                            {
-                                source: pod.metadata.uid,
-                                target: service.metadata.uid,
-                                endpoint: "Blank",
-                                anchors: ["Bottom", "Top"],
-                                connector: "Straight",
-                                paintStyle: {lineWidth: 5, strokeStyle: color},
-                                overlays: [
-                                    ["Arrow", {width: 15, length: 30, location: 0.3}],
-                                    ["Arrow", {width: 15, length: 30, location: 0.6}],
-                                    ["Arrow", {width: 15, length: 30, location: 1}],
-                                ],
-                            });
-                    }
-                  });
-                });
-            }
-        });
-    });
-};
+// var connectUses = function () {
+//     var colorIx = 0;
+//
+//     $.each(uses, function (key, list) {
+//
+//         var color = colors[colorIx];
+//         colorIx++;
+//         $.each(pods.items, function (i, pod) {
+//             if (pod.metadata.labels && pod.metadata.labels.run == key) {
+//                 $.each(list, function (j, nodeKey) {
+//                   $.each(nodes.items, function (j, node) {
+//                     if (node.metadata.labels && node.metadata.labels.run == nodeKey) {
+//                         jsPlumb.connect(
+//                             {
+//                                 source: pod.metadata.uid,
+//                                 target: node.metadata.uid,
+//                                 endpoint: "Blank",
+//                                 anchors: ["Bottom", "Top"],
+//                                 connector: "Straight",
+//                                 paintStyle: {lineWidth: 5, strokeStyle: color},
+//                                 overlays: [
+//                                     ["Arrow", {width: 15, length: 30, location: 0.3}],
+//                                     ["Arrow", {width: 15, length: 30, location: 0.6}],
+//                                     ["Arrow", {width: 15, length: 30, location: 1}],
+//                                 ],
+//                             });
+//                     }
+//                   });
+//                 });
+//             }
+//         });
+//     });
+// };
 
 var makeGroupOrder = function () {
     var groupScores = {};
@@ -176,12 +201,13 @@ var makeGroupOrder = function () {
     return groupOrder;
 };
 
-
 var renderGroups = function () {
     var elt = $('#sheet');
     var y = 10;
-    var serviceLeft = 0;
-    var groupOrder = makeGroupOrder();
+    var nodeLeft = 0;
+
+    // var groupOrder = ["node", "pod"];
+    var groupOrder = ["node"];
     $.each(groupOrder, function (ix, key) {
         list = groups[key];
         if (!list) {
@@ -189,29 +215,24 @@ var renderGroups = function () {
         }
         var div = $('<div/>');
         var x = 100;
-        var controllersCount = 0;
+        var podCount = 0;
         $.each(list, function (index, value) {
             var eltDiv = null;
-            if (value.type == "pod") {
-                eltDiv = $('<div class="window pod" id="' + value.metadata.uid +
-                    '" style="left: ' + (x + 50) + '; top: ' + (y + 160) + '"/>');
-            } else if (value.type == "service") {
-                eltDiv = $('<div class="window wide service" id="' + value.metadata.uid +
-                    '" style="left: ' + 75 + '; top: ' + y + '"/>');
-            } else {
-                eltDiv = $('<div class="window wide controller" id="' + value.metadata.uid +
-                    '" style="left: ' + (x + 80) + '; top: ' + (y + 100 + controllersCount * 100) +
-                    '"/>');
-                controllersCount += 1;
+            if (value.type == "node") {
+                eltDiv = $('<div class="window wide node" id="' + value.metadata.name +
+                    '" style="left: ' + (x + 75) + '; top: ' + y + '"/>');
+                nodeMargins[value.metadata.name] = (x+75)
+                console.log(nodeMargins)
             }
             span = $('<span />');
-            span.text(truncate(value.metadata.name, 17));
+
+            span.text(truncate(value.metadata.name, 25));
             eltDiv.append(span)
             div.append(eltDiv);
-            x += 180;
+            x += 320;
         });
-        y += 400;
-        serviceLeft += 200;
+        // y += 400;
+        nodeLeft += 200;
         elt.append(div);
     });
 };
@@ -246,18 +267,18 @@ var loadData = function () {
         });
     });
 
-    var req2 = $.getJSON("/api/v1/namespaces/default/replicationcontrollers", function (data) {
+    var req2 = $.getJSON("/apis/apps/v1/namespaces/default/deployments", function (data) {
         controllers = data;
         $.each(data.items, function (key, val) {
-            val.type = 'replicationController';
+            val.type = 'deployment';
         });
     });
 
 
-    var req3 = $.getJSON("/api/v1/namespaces/default/services", function (data) {
-        services = data;
+    var req3 = $.getJSON("/api/v1/nodes", function (data) {
+        nodes = data;
         $.each(data.items, function (key, val) {
-            val.type = 'service';
+            val.type = 'node';
         });
     });
     $.when(req1, req2, req3).then(function () {
@@ -275,7 +296,7 @@ var reload = function () {
     jsPlumb.reset()
 
     pods = [];
-    services = [];
+    nodes = [];
     controllers = [];
     uses = {};
     groups = {};
@@ -299,9 +320,9 @@ var reload = function () {
     $.when(promise).then(function () {
         groupByName();
         renderGroups();
-        connectControllers();
+        connectNodes();
     })
     jsPlumb.fire("jsPlumbDemoLoaded", instance);
 
-    setTimeout(reload, 6000);
+    //setTimeout(reload, 6000);
 };
