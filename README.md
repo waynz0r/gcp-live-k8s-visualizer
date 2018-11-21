@@ -1,7 +1,7 @@
 ## Kubernetes Visualizer
 
 This is a simple visualizer for use with the Kubernetes API.
-It displays which pod is displayed to which node, to help with visualizing the operation of the scheduler.
+It displays which pod is placed on which node, to help with visualizing the operation of the scheduler.
 
 ### Usage:
    * First install a Kubernetes or Container Engine Cluster
