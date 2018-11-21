@@ -1,6 +1,7 @@
-## Kubernetes/Container Engine Visualizer
+## Kubernetes Visualizer
 
 This is a simple visualizer for use with the Kubernetes API.
+It displays which pod is displayed to which node, to help with visualizing the operation of the scheduler.
 
 ### Usage:
    * First install a Kubernetes or Container Engine Cluster
@@ -11,7 +12,4 @@ Then
 
     http://127.0.0.1:8001/my-mountpoint/
 
-That's it.  The visualizer uses labels to organize the visualization.  In particular it expects that
-
-   * pods, replicationcontrollers, and services have a ```name``` label, and pods and their associated replication controller share the same ```name```, and
-   * the pods in your cluster will have a ```uses``` label which contains a comma separated list of services that the pod uses.
+That's it.  The visualizer uses labels to organize the visualization.  In particular it expects that pods have a ```name``` label.
