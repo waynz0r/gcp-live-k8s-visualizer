@@ -40,9 +40,6 @@ var podColors = [
 ]
 
 var insertByName = function (index, value) {
-    if (!value || !value.metadata.labels || value.metadata.name == 'kubernetes') {
-        return;
-    }
     var list = groups[value.type];
     if (!list) {
         list = [];
@@ -56,19 +53,6 @@ var groupByName = function () {
     $.each(nodes, insertByName);
 };
 
-// var matchesLabelQuery = function (labels, selector) {
-//     var match = true;
-//
-//     if(!labels) { return false; }
-//
-//     $.each(selector, function (key, value) {
-//         if (labels[key] !== value) {
-//             match = false;
-//         }
-//     });
-//     return match;
-// };
-
 var renderPods = function () {
     var elt = $('#sheet');
 
@@ -76,7 +60,6 @@ var renderPods = function () {
 
     for (var j = 0; j < pods.length; j++) {
         var pod = pods[j];
-
         for (var i = 0; i < nodes.length; i++) {
           var node = nodes[i];
             if (pod.spec.nodeName === node.metadata.name) {
@@ -90,25 +73,14 @@ var renderPods = function () {
                 podsPerNode[node.metadata.name] = podsPerNode[node.metadata.name] + 1
               }
               var eltDiv = $('<div class="window pod" id="' + pod.metadata.uid +
-                      '" style="left: ' + (margin) + '; top: ' + (80 + (podsPerNode[node.metadata.name] * 120)) + '; background-color:'+ podColors[pod.metadata.labels.name.hashCode() % podColors.length] +';"/>');
+                      '" style="left: ' + (margin) + '; top: ' + (125 + (podsPerNode[node.metadata.name] * 50)) + '; background-color:'+ podColors[pod.metadata.name.hashCode() % podColors.length] +';"/>');
 
               span = $('<span />');
-              span.text(truncatePodName(pod.metadata.name, 25));
+              span.text(truncatePodName(pod.metadata.name, 40));
 
               eltDiv.append(span)
               div.append(eltDiv);
-
               elt.append(div)
-
-              jsPlumb.connect({
-                    source: node.metadata.name,
-                    target: pod.metadata.uid,
-                    anchors: ["Left", "Left"],
-                    paintStyle: {lineWidth: 5, strokeStyle: 'rgb(51,105,232)'},
-                    joinStyle: "round",
-                    endpointStyle: {fillStyle: 'rgb(51,105,232)', radius: 5},
-                    connector: ["Flowchart", {cornerRadius: 5}]
-                });
             }
         }
     }
@@ -121,7 +93,7 @@ var colors = [
 
 var renderNodes = function () {
     var elt = $('#sheet');
-    var y = 10;
+    var y = 25;
     var nodeLeft = 0;
 
     // var groupOrder = ["node", "pod"];
@@ -132,7 +104,7 @@ var renderNodes = function () {
             return;
         }
         var div = $('<div/>');
-        var x = 60;
+        var x = -50;
         var podCount = 0;
         $.each(list, function (index, value) {
             var eltDiv = null;
@@ -142,23 +114,24 @@ var renderNodes = function () {
                 nodeMargins[value.metadata.name] = (x+75)
             }
             span = $('<span />');
-            span.text(truncate(value.metadata.name, 25));
+            span.text(truncate(value.metadata.name, 80));
             eltDiv.append(span)
-            eltDiv.append($('<br />'))
+            if (value.spec.unschedulable === true) {
+                eltDiv.append($('<span style="font-weight: bold; font-size: 14px; color: #900" />').html('&nbsp;&nbsp;&ndash;&nbsp;&nbsp;cordoned & tainted'))
+            }
             eltDiv.append($('<br />'))
             labelSpan = $('<span />');
-            labelSpan.text("Labels:");
             eltDiv.append(labelSpan)
             $.each(value.metadata.labels, function(key, val) {
               if (nodeLabels.includes(key)){
                 eltDiv.append($('<br />'))
-                span2 = $('<span style="font-size: 14px; color: black" />');
+                span2 = $('<span style="font-weight: normal; font-size: 14px; color: black" />');
                 span2.text(truncate(key, 20) + " = " + val);
                 eltDiv.append(span2)
               }
             });
             div.append(eltDiv);
-            x += 360;
+            x += 340;
         });
         // y += 400;
         nodeLeft += 200;
@@ -168,7 +141,7 @@ var renderNodes = function () {
 
 var loadData = function () {
     var deferred = new $.Deferred();
-    var req1 = $.getJSON("/api/v1/namespaces/default/pods", function (data) {
+    var req1 = $.getJSON("/api/v1/pods", function (data) {
         pods = [];
         $.each(data.items, function (key, val) {
           val.type = 'pod';
@@ -189,40 +162,22 @@ var loadData = function () {
     return deferred;
 }
 
-jsPlumb.bind("ready", function () {
+$(document).bind("ready", function () {
   reload()
 });
 
 var reload = function () {
-    $('#sheet').empty()
-    jsPlumb.reset()
-
     pods = [];
     nodes = [];
     groups = {};
 
-    var instance = jsPlumb.getInstance({
-        // default drag options
-        DragOptions: {cursor: 'pointer', zIndex: 2000},
-        // the overlays to decorate each connection with.  note that the label overlay uses a function to generate the label text; in this
-        // case it returns the 'labelText' member that we set on each connection in the 'init' method below.
-        ConnectionOverlays: [
-            ["Arrow", {location: 1}],
-            //[ "Label", {
-            //	location:0.1,
-            //	id:"label",
-            //	cssClass:"aLabel"
-            //}]
-        ],
-        Container: "flowchart-demo"
-    });
     var promise = loadData();
     $.when(promise).then(function () {
+        $('#sheet').empty()
         groupByName();
         renderNodes();
         renderPods();
     })
-    jsPlumb.fire("jsPlumbDemoLoaded", instance);
 
     setTimeout(reload, 6000);
 };

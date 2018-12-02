@@ -1,12 +1,25 @@
+body {
+  padding:0;
+  margin:0;
+  font-family:'Open Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  background-color: whitesmoke;
+}
+
 .wide {
   width: 300px;
+}
+
+.window {
+  position: absolute;
+  padding: 5px;
+  border: 1px solid #bdbdbd;
 }
 
 .node {
   text-align:left!important;
   background-color: #AAAAAA;
-  height:10em;
-  height:160px;
+  /* height:10em; */
+  height:120px;
   line-height: 20px;
   color: white;
   font-weight: bold;
@@ -18,8 +31,10 @@
 }
 
 .pod {
-  width: 200px;
+  width: 300px;
   background-color:#eeeeef;
+  line-height: 20px;
+  height: 20px;
 }
 
 .logo {
