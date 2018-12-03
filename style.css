@@ -6,7 +6,7 @@ body {
 }
 
 .wide {
-  width: 300px;
+  width: 320px;
 }
 
 .window {
@@ -31,7 +31,7 @@ body {
 }
 
 .pod {
-  width: 300px;
+  width: 320px;
   background-color:#eeeeef;
   line-height: 20px;
   height: 20px;
