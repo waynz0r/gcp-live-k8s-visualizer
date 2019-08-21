@@ -18,6 +18,7 @@ body {
 .node {
   text-align:left!important;
   background-color: #AAAAAA;
+  border-top: 5px solid #aaa;
   /* height:10em; */
   height:120px;
   line-height: 20px;
@@ -37,24 +38,43 @@ body {
   height: 20px;
 }
 
+.spot {
+  border-top: 5px solid rgba(243, 17, 17, 0.89);
+}
+
 .logo {
-  background: url('titlelogo.svg');
+  background: url('banzai-cloud-logo-w.svg');
   background-repeat: no-repeat;
   height: 150px;
   width: 600px;
 }
 
 .navbar-logo {
-  margin-left: 10px;
+  margin-left: 25px;
   text-align: left;
 }
 
+.navbar-logo span {
+  line-height: 42px;
+  vertical-align: middle;
+  text-transform: uppercase;
+  font-family: 'Montserrat', sans-serif !important;
+  padding-left: 5px;
+  font-size: 16px;
+  letter-spacing: 6px;
+  color: #fff;
+  position: relative;
+  top: 3px;
+}
+
 #nav-logo-img {
+  width: 70px;
   height: 42px;
+  vertical-align: middle;
 }
 
 .navbar {
-  background-color: #447AE8;
+  background-color: #143176;
   border: 0px;
   border-radius: 0;
 }

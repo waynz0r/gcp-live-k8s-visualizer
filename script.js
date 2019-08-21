@@ -122,13 +122,16 @@ var renderNodes = function () {
             eltDiv.append($('<br />'))
             labelSpan = $('<span />');
             eltDiv.append(labelSpan)
+            if (value.metadata.labels["node.banzaicloud.io/ondemand"] == "false") {
+                eltDiv.attr("class", eltDiv.attr("class") + " spot")
+            }
             $.each(value.metadata.labels, function(key, val) {
-              if (nodeLabels.includes(key)){
-                eltDiv.append($('<br />'))
-                span2 = $('<span style="font-weight: normal; font-size: 14px; color: black" />');
-                span2.text(truncate(key, 20) + " = " + val);
-                eltDiv.append(span2)
-              }
+                if (nodeLabels.includes(key)){
+                    eltDiv.append($('<br />'))
+                    span2 = $('<span style="font-weight: normal; font-size: 14px; color: black" />');
+                    span2.text(truncate(key, 20) + " = " + val);
+                    eltDiv.append(span2)
+                }
             });
             div.append(eltDiv);
             x += 340;
