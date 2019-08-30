@@ -2,27 +2,57 @@ body {
   padding:0;
   margin:0;
   font-family:'Open Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  background-color: whitesmoke;
+  background-color: rgb(247, 246, 246);
 }
 
 .wide {
-  width: 320px;
+  width: 390px;
 }
 
 .window {
-  position: absolute;
-  padding: 5px;
-  border: 1px solid #bdbdbd;
+  float: left;
+}
+
+.clearfix {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: -moz-box;
+  display: flex;
+  -webkit-flex-wrap: wrap;
+      -ms-flex-wrap: wrap;
+          flex-wrap: wrap;
+  -webkit-flex-flow: row wrap;
+      -ms-flex-flow: row wrap;
+          flex-flow: row wrap;
+}
+
+.node-container {
+  margin-bottom: 45px;
+  position: relative;
+  margin-right: 10px;
 }
 
 .node {
   text-align:left!important;
-  background-color: #AAAAAA;
-  border-top: 5px solid #aaa;
-  /* height:10em; */
-  height:120px;
+  background-color: rgba(174,174,174,.3)!important;
+  border-top: 5px solid rgba(174,174,174,.3);
   line-height: 20px;
-  color: white;
+  color: #535353;
+  font-weight: bold;
+  padding: 5px;
+}
+
+span.phase {
+  font-size: 8px;
+  position: absolute;
+  top: -5px;
+  right: 3px;
+  text-transform: lowercase;
+}
+
+span.cordoned {
+  color: #900;
   font-weight: bold;
 }
 
@@ -31,15 +61,58 @@ body {
   color: white;
 }
 
-.pod {
-  width: 320px;
-  background-color:#eeeeef;
-  line-height: 20px;
-  height: 20px;
+span.uptime {
+  font-size: 9px;
+  font-weight: normal;
 }
 
-.spot {
-  border-top: 5px solid rgba(243, 17, 17, 0.89);
+.pod {
+  position: relative;
+  background-color:#eeeeef;
+  opacity: 0.8;
+  line-height: 20px;
+  height: 20px;
+  padding: 5px;
+  border-top: 1px solid #333;
+  margin-bottom: 0;
+  font-size: 14px;
+}
+
+.pod span {
+  opacity: 1;
+  color: #000;
+}
+
+footer {
+  font-family: 'Montserrat', sans-serif !important;
+  height: 50px;
+  font-size: 12px;
+  background-color: #efefef;
+  border-top: 1px solid #bdbdbd;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  text-align: center;
+}
+
+footer > span {
+  color: #535353;
+  line-height: 50px;
+  display: block;
+  margin: 0 auto;
+}
+
+footer span span {
+  text-transform: uppercase;
+}
+
+.spot-instance {
+  display: block;
+  background-color: #14578C;
+  color: #fff;
+  padding: 5px;
+  text-align: center;
+  font-size: 10px;
 }
 
 .logo {
@@ -79,22 +152,30 @@ body {
   border-radius: 0;
 }
 
+#searchbox {
+  position: absolute;
+  left: 325px;
+  top: 10px;
+  border: 1px solid #bdbdbd;
+  font-size: 15px;
+  font-weight: 300;
+
+  border: none;
+  outline: 0;
+  padding: 3px 46px 3px 3px;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+button:focus {
+    outline: none;
+}
+
 .window span {
   vertical-align: top;
 }
 
-#main {
-  margin-top: 0;
-  width: auto;
-  height: 100%;
-  max-width: none;
-  max-height: none;
-}
-
 .demo {
-  position: absolute;
-  top: 42px;
-  bottom: 0;
-  height: auto;
-  margin-bottom: 0;
+  padding: 10px;
 }

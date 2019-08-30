@@ -23,7 +23,7 @@ var truncate = function (str, width) {
 
 var truncatePodName = function (str, width) {
     if (str && str.length > width) {
-        return str.slice(0, 20) + "..." + str.slice(str.length-5, str.length);
+        return str.slice(0, 38) + "..." + str.slice(str.length-5, str.length);
     }
     return str;
 };
@@ -53,18 +53,25 @@ var groupByName = function () {
     $.each(nodes, insertByName);
 };
 
-var renderPods = function () {
-    var elt = $('#sheet');
+var colors = [
+    'rgb(213,15,37)',
+    'rgba(238,178,17,1.0)'
+];
 
+var renderPods = function () {
     var podsPerNode = {}
+
+    sboxvalue = $("#searchbox").val()
 
     for (var j = 0; j < pods.length; j++) {
         var pod = pods[j];
         for (var i = 0; i < nodes.length; i++) {
-          var node = nodes[i];
+            var node = nodes[i];
             if (pod.spec.nodeName === node.metadata.name) {
-
-              var div = $('<div/>');
+              var elt = $('div.node-container#' + node.metadata.uid);
+              if (sboxvalue != "" && pod.metadata.name.search(new RegExp(sboxvalue, 'i')) < 0) {
+                continue;
+              }
 
               margin = nodeMargins[node.metadata.name]
               if (!podsPerNode[node.metadata.name]) {
@@ -72,75 +79,71 @@ var renderPods = function () {
               } else {
                 podsPerNode[node.metadata.name] = podsPerNode[node.metadata.name] + 1
               }
-              var eltDiv = $('<div class="window pod" id="' + pod.metadata.uid +
-                      '" style="left: ' + (margin) + '; top: ' + (125 + (podsPerNode[node.metadata.name] * 50)) + '; background-color:'+ podColors[pod.metadata.name.hashCode() % podColors.length] +';"/>');
-
+              var eltDiv = $('<div class="pod" id="' + pod.metadata.uid +
+                      '" style="background-color:'+ podColors[pod.metadata.name.hashCode() % podColors.length] +';"/>');
+              eltDiv.data("pod-name", pod.metadata.name)
               span = $('<span />');
-              span.text(truncatePodName(pod.metadata.name, 40));
+              span.text(truncatePodName(pod.metadata.name, 45));
 
+              if (pod.status.phase != "Running") {
+                span.append($('<span class="phase" />').html(pod.status.phase))
+              }
               eltDiv.append(span)
-              div.append(eltDiv);
-              elt.append(div)
+              eltDiv.click(function() {
+                copyToClipboard($(this), 'pod-name')
+              })
+              elt.append(eltDiv);
             }
         }
     }
 };
 
-var colors = [
-    'rgb(213,15,37)',
-    'rgba(238,178,17,1.0)'
-];
-
-var renderNodes = function () {
+var renderNodes = function() {
     var elt = $('#sheet');
-    var y = 25;
-    var nodeLeft = 0;
-
-    // var groupOrder = ["node", "pod"];
     var groupOrder = ["node"];
     $.each(groupOrder, function (ix, key) {
         list = groups[key];
         if (!list) {
             return;
         }
-        var div = $('<div/>');
-        var x = -50;
-        var podCount = 0;
+        var div = $('<div class="clearfix" />');
+   
         $.each(list, function (index, value) {
+            var outerDiv = $('<div class="node-container window wide" id="' + value.metadata.uid +
+            '"/>')
             var eltDiv = null;
             if (value.type == "node") {
-                eltDiv = $('<div class="window wide node" id="' + value.metadata.name +
-                    '" style="left: ' + (x + 75) + '; top: ' + y + '"/>');
-                nodeMargins[value.metadata.name] = (x+75)
+                eltDiv = $('<div class="node"/>');
             }
             span = $('<span />');
             span.text(truncate(value.metadata.name, 80));
             eltDiv.append(span)
-            if (value.spec.unschedulable === true) {
-                eltDiv.append($('<span style="font-weight: bold; font-size: 14px; color: #900" />').html('&nbsp;&nbsp;&ndash;&nbsp;&nbsp;cordoned & tainted'))
-            }
             eltDiv.append($('<br />'))
+            m = moment(value.metadata.creationTimestamp)
+            var spanValue = 'up since ' + moment.duration(moment().diff(m)).humanize()
+            if (value.spec.unschedulable === true) {
+                spanValue += ' – <span class="cordoned">cordoned & draining</span>'
+            }
+            eltDiv.append($('<span class="uptime">').html(spanValue))
             labelSpan = $('<span />');
             eltDiv.append(labelSpan)
-            if (value.metadata.labels["node.banzaicloud.io/ondemand"] == "false") {
-                eltDiv.attr("class", eltDiv.attr("class") + " spot")
-            }
             $.each(value.metadata.labels, function(key, val) {
                 if (nodeLabels.includes(key)){
                     eltDiv.append($('<br />'))
                     span2 = $('<span style="font-weight: normal; font-size: 14px; color: black" />');
-                    span2.text(truncate(key, 20) + " = " + val);
+                    span2.text(truncate(key, 40) + " = " + val);
                     eltDiv.append(span2)
                 }
             });
-            div.append(eltDiv);
-            x += 340;
+            if (value.metadata.labels["node.banzaicloud.io/ondemand"] == "false") {
+                outerDiv.prepend($('<span class="spot-instance">').html('spot instance'))
+           }
+            outerDiv.append(eltDiv);
+            div.append(outerDiv);
         });
-        // y += 400;
-        nodeLeft += 200;
         elt.append(div);
     });
-};
+}
 
 var loadData = function () {
     var deferred = new $.Deferred();
@@ -156,7 +159,15 @@ var loadData = function () {
         nodes = [];
         $.each(data.items, function (key, val) {
             val.type = 'node';
-            nodes.push(val)
+            if (val.metadata.labels["node.banzaicloud.io/ondemand"] == "true") {
+                nodes.push(val)
+            }
+        });
+        $.each(data.items, function (key, val) {
+            val.type = 'node';
+            if (val.metadata.labels["node.banzaicloud.io/ondemand"] == "false") {
+                nodes.push(val)
+            }
         });
     });
     $.when(req1, req2).then(function () {
@@ -166,7 +177,7 @@ var loadData = function () {
 }
 
 $(document).bind("ready", function () {
-  reload()
+    reload()
 });
 
 var reload = function () {
@@ -182,7 +193,7 @@ var reload = function () {
         renderPods();
     })
 
-    setTimeout(reload, 6000);
+    setTimeout(reload, 3000);
 };
 
 String.prototype.hashCode = function() {
@@ -190,10 +201,19 @@ String.prototype.hashCode = function() {
     if (this.length == 0) {
         return hash;
     }
-    var charNr = this.length > 6 ? 6 : this.length
+    l = parseInt(this.length / 2.5)
+    var charNr = this.length > l ? l : this.length
     for (var i = 0; i < charNr; i++) {
         var char = this.charCodeAt(0);
         hash = hash+char;
     }
     return hash;
+}
+
+function copyToClipboard(element, attr) {
+    var $temp = $("<input>");
+    $("body").append($temp);
+    $temp.val($(element).data(attr)).select();
+    document.execCommand("copy");
+    $temp.remove();
 }
